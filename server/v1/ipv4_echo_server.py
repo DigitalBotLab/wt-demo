@@ -90,7 +90,7 @@ from aioquic.quic.events import ProtocolNegotiated, StreamReset, QuicEvent
 #BIND_ADDRESS = '::1'
 #BIND_PORT = 4433
 
-BIND_ADDRESS = '0.0.0.0'
+BIND_ADDRESS = 'localhost'
 BIND_PORT = 6161
 
 logger = logging.getLogger(__name__)
@@ -222,6 +222,7 @@ if __name__ == '__main__':
             create_protocol=WebTransportProtocol,
         ))
     try:
+        print("Listening on https://{}:{}".format(BIND_ADDRESS, BIND_PORT))
         logging.info(
             "Listening on https://{}:{}".format(BIND_ADDRESS, BIND_PORT))
         loop.run_forever()
