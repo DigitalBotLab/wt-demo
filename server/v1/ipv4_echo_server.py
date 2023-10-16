@@ -152,6 +152,7 @@ class WebTransportProtocol(QuicConnectionProtocol):
     def quic_event_received(self, event: QuicEvent) -> None:
         print("[WebTransportProtocol] quic_event_received")
         if isinstance(event, ProtocolNegotiated):
+            print("[WebTransportProtocol] ProtocolNegotiated", event)
             self._http = H3Connection(self._quic, enable_webtransport=True)
         elif isinstance(event, StreamReset) and self._handler is not None:
             # Streams in QUIC can be closed in two ways: normal (FIN) and
