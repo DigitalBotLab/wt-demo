@@ -112,11 +112,13 @@ class CounterHandler:
         self._payloads = defaultdict(bytearray)
 
     def h3_event_received(self, event: H3Event) -> None:
+        print("[CounterHandler] h3_event_received")
         if isinstance(event, DatagramReceived):
             payload = event.data
             self._http.send_datagram(self._session_id, payload)
 
         if isinstance(event, WebTransportStreamDataReceived):
+            print("[CounterHandler] len(payloads)", len(self._payloads))
             self._payloads[event.stream_id] += event.data
             if event.stream_ended:
                 if stream_is_unidirectional(event.stream_id):
@@ -130,6 +132,7 @@ class CounterHandler:
                 self.stream_closed(event.stream_id)
 
     def stream_closed(self, stream_id: int) -> None:
+        print("[CounterHandler] stream_closed")
         try:
             del self._payloads[stream_id]
         except KeyError:
@@ -147,6 +150,7 @@ class WebTransportProtocol(QuicConnectionProtocol):
         self._handler: Optional[CounterHandler] = None
 
     def quic_event_received(self, event: QuicEvent) -> None:
+        print("[WebTransportProtocol] quic_event_received")
         if isinstance(event, ProtocolNegotiated):
             self._http = H3Connection(self._quic, enable_webtransport=True)
         elif isinstance(event, StreamReset) and self._handler is not None:
@@ -160,6 +164,7 @@ class WebTransportProtocol(QuicConnectionProtocol):
                 self._h3_event_received(h3_event)
 
     def _h3_event_received(self, event: H3Event) -> None:
+        print("[WebTransportProtocol] _h3_event_received")
         if isinstance(event, HeadersReceived):
             headers = {}
             for header, value in event.headers:
@@ -167,6 +172,7 @@ class WebTransportProtocol(QuicConnectionProtocol):
             if (headers.get(b":method") == b"CONNECT" and
                     headers.get(b":protocol") == b"webtransport"):
                 self._handshake_webtransport(event.stream_id, headers)
+                print("[WebTransportProtocol] headers", headers)
             else:
                 self._send_response(event.stream_id, 400, end_stream=True)
 
