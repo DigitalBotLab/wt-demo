@@ -86,6 +86,8 @@ const createWindow = () => {
             }
         });
 
+        mainWindow.webContents.send('SET_BUTTONS');
+
     });
 
     mainWindow.webContents.openDevTools();

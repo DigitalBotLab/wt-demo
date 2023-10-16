@@ -2,3 +2,8 @@ python3.9 ipv4_echo_server.py webrtc.internaut.com/fullchain.pem webrtc.internau
 python3.9 ipv6_echo_server.py webrtc.internaut.com/fullchain.pem webrtc.internaut.com/privkey.pem &
 
 python3 ipv4_echo_server.py dbl_wild.crt dbl_wild.key
+python ipv4_echo_server.py local.pem local-key.pem
+
+openssl req -newkey rsa:2048 -nodes -keyout certificate.key -x509 -out certificate.pem -subj '/CN=Test Certificate' -addext "subjectAltName = DNS:localhost"
+
+openssl x509 -pubkey -noout -in certificate.pem openssl rsa -pubin -outform der | openssl dgst -sha256 -binary | base64

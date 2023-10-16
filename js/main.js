@@ -438,6 +438,7 @@ document.addEventListener('DOMContentLoaded', async function(event) {
     // Transfer the readable stream to the worker, as well as other info from the user interface.
     // NOTE: transferring frameStream and reading it in the worker is more
     // efficient than reading frameStream here and transferring VideoFrames individually.
+    console.log("streamWorker", streamWorker);
     try {
       streamWorker.postMessage({ type: "stream", config: config, url: url, streams: {input: inputStream, output: outputStream}}, [inputStream, outputStream]);
     } catch(e) {

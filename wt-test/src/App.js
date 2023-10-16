@@ -51,11 +51,20 @@ function App() {
   //   console.log("Rendering... [screenId]", screenId);
   // getStream(''screenId'');
   // });
+  console.log("App loading...");	
 
   return (
     <div className="App">
       <header className="App-header">
-        <video ref={videoRef} id="my-video" style={{width:960, height:540, backgroundColor:'white'}} autoPlay muted></video>
+        <video ref={videoRef} id="input-video" style={{width:960, height:540, backgroundColor:'white'}} autoPlay muted></video>
+        <br/>
+          <div>
+          <button id="connect">Connect</button>
+          <button id="stop">Stop</button>
+          
+        </div>
+        <br/>
+        <video ref={videoRef} id="output-video" style={{width:960, height:540, backgroundColor:'white'}} autoPlay muted></video>
       </header>
     </div>
   );
