@@ -118,7 +118,7 @@ class CounterHandler:
             self._http.send_datagram(self._session_id, payload)
 
         if isinstance(event, WebTransportStreamDataReceived):
-            print("[CounterHandler] len(payloads)", len(self._payloads))
+            print("[CounterHandler] stream_id len(payloads)", event.stream_id, len(self._payloads))
             self._payloads[event.stream_id] += event.data
             if event.stream_ended:
                 if stream_is_unidirectional(event.stream_id):
