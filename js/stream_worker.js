@@ -641,6 +641,7 @@ SSRC = this.config.ssrc
            let dec = new TextDecoder();
            hydChunk.config = dec.decode(new Uint8Array(chunk, HEADER_LENGTH));
            // self.postMessage({text: 'Deserial Config: ' + hydChunk.config});
+           console.log("text", hydChunk.config);
          } else {
            let data = new Uint8Array(chunk.byteLength - HEADER_LENGTH); //create Uint8Array for data
            data.set(new Uint8Array(chunk, HEADER_LENGTH));
@@ -649,14 +650,18 @@ SSRC = this.config.ssrc
               timestamp: timestamp,
               data: data.buffer
            });
+
+           //console.log("data", data.buffer);
          }
+         
          hydChunk.sendTime = sendTime;
          hydChunk.temporalLayerId = tid;
          hydChunk.ssrc = ssrc;
          hydChunk.pt = pt;
          hydChunk.seqNo = seqNo;
          //self.postMessage({text: 'seqNo: ' + seqNo + ' Deserial hdr: ' + HEADER_LENGTH + ' + ' chunk length: ' + hydChunk.byteLength });
-         if (hydChunk.seqNo == seqPointer) {
+         console.log("hydChunk", JSON.stringify(hydChunk), seqPointer);
+         if (hydChunk.seqNo == seqPointer || seqPointer > 100) {
            // No holes in the sequence number space
            seqPointer++
            controller.enqueue(hydChunk); 
@@ -899,7 +904,7 @@ SSRC = this.config.ssrc
              return;
            } 
            let number = this.streamNumber++;
-           //self.postMessage({text: 'New incoming stream # ' + number});
+           self.postMessage({text: 'New incoming stream # ' + number});
            get_frame(value, number).then(
              (frame) => {
                if (frame) {
@@ -946,8 +951,7 @@ SSRC = this.config.ssrc
             Promise.reject(e);
           });
      Promise.all([promise1, promise2]).then(
-       (values) => { self.postMessage({text: 'Resolutions: ' + JSON.stringify(values)});
-       }
+       (values) => { self.postMessage({text: 'Resolutions: ' + JSON.stringify(values)});}
        ).catch((e) => { 
          self.postMessage({severity: 'fatal', text: `pipeline error: ${e.message}`}); 
        });
