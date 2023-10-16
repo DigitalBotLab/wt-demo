@@ -90,7 +90,7 @@ from aioquic.quic.events import ProtocolNegotiated, StreamReset, QuicEvent
 #BIND_ADDRESS = '::1'
 #BIND_PORT = 4433
 
-BIND_ADDRESS = 'localhost'
+BIND_ADDRESS = '0.0.0.0'
 BIND_PORT = 6161
 
 logger = logging.getLogger(__name__)
