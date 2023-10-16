@@ -93,6 +93,10 @@ from aioquic.quic.events import ProtocolNegotiated, StreamReset, QuicEvent
 BIND_ADDRESS = '0.0.0.0'
 BIND_PORT = 6161
 
+from collections import deque
+
+stream_cache = []
+
 logger = logging.getLogger(__name__)
 
 # CounterHandler implements a really simple protocol:
@@ -107,18 +111,20 @@ logger = logging.getLogger(__name__)
 class CounterHandler:
 
     def __init__(self, session_id, http: H3Connection) -> None:
+        print("init CounterHandler")
         self._session_id = session_id
         self._http = http
         self._payloads = defaultdict(bytearray)
 
     def h3_event_received(self, event: H3Event) -> None:
+        global stream_cache
         print("[CounterHandler] h3_event_received")
         if isinstance(event, DatagramReceived):
             payload = event.data
             self._http.send_datagram(self._session_id, payload)
 
         if isinstance(event, WebTransportStreamDataReceived):
-            print("[CounterHandler] stream_id len(payloads)", event.stream_id, len(self._payloads))
+            #print("[CounterHandler] stream_id len(payloads)", event.stream_id, len(self._payloads), event.data)
             self._payloads[event.stream_id] += event.data
             if event.stream_ended:
                 if stream_is_unidirectional(event.stream_id):
@@ -126,7 +132,13 @@ class CounterHandler:
                         self._session_id, is_unidirectional=True)
                 else:
                     response_id = event.stream_id
+                
+                
                 payload = self._payloads[event.stream_id]
+                # else:
+                # payload = stream_cache[0]
+                
+                print("payload", len(stream_cache), payload)
                 self._http._quic.send_stream_data(
                     response_id, payload, end_stream=True)
                 self.stream_closed(event.stream_id)
@@ -145,12 +157,13 @@ class CounterHandler:
 class WebTransportProtocol(QuicConnectionProtocol):
 
     def __init__(self, *args, **kwargs) -> None:
+        print("init WebTransportProtocol")
         super().__init__(*args, **kwargs)
         self._http: Optional[H3Connection] = None
         self._handler: Optional[CounterHandler] = None
 
     def quic_event_received(self, event: QuicEvent) -> None:
-        print("[WebTransportProtocol] quic_event_received")
+        # print("[WebTransportProtocol] quic_event_received")
         if isinstance(event, ProtocolNegotiated):
             print("[WebTransportProtocol] ProtocolNegotiated", event)
             self._http = H3Connection(self._quic, enable_webtransport=True)
