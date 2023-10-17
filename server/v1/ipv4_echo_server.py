@@ -74,6 +74,7 @@ This will output "13" (the length of "Hello, world!") into the console.
 # See https://www.chromium.org/developers/how-tos/run-chromium-with-flags for
 # details on how to run Chromium with flags.
 
+from collections import deque
 import argparse
 import asyncio
 import logging
@@ -93,7 +94,6 @@ from aioquic.quic.events import ProtocolNegotiated, StreamReset, QuicEvent
 BIND_ADDRESS = '0.0.0.0'
 BIND_PORT = 6161
 
-from collections import deque
 
 stream_cache = deque(maxlen=10)
 
@@ -108,6 +108,8 @@ logger = logging.getLogger(__name__)
 #     count on a new unidirectional stream.
 #   - For every incoming datagram, it sends a datagram with the length of
 #     datagram that was just received.
+
+
 class CounterHandler:
 
     def __init__(self, session_id, http: H3Connection) -> None:
@@ -132,12 +134,11 @@ class CounterHandler:
                         self._session_id, is_unidirectional=True)
                 else:
                     response_id = event.stream_id
-                
-                
+
                 # payload = self._payloads[event.stream_id]
                 # else:
                 payload = stream_cache[0]
-                
+
                 # print("payload", len(stream_cache), payload)
                 self._http._quic.send_stream_data(
                     response_id, payload, end_stream=True)
@@ -233,20 +234,42 @@ if __name__ == '__main__':
     )
     configuration.load_cert_chain(args.certificate, args.key)
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(
-        serve(
+    # loop = asyncio.get_event_loop()
+    # loop.run_until_complete(
+    #     serve(
+    #         BIND_ADDRESS,
+    #         BIND_PORT,
+    #         configuration=configuration,
+    #         create_protocol=WebTransportProtocol,
+    #     )
+    # )
+
+    async def double_server():
+        await serve(
             BIND_ADDRESS,
             BIND_PORT,
             configuration=configuration,
             create_protocol=WebTransportProtocol,
-        ))
+        )
+        await serve(
+            BIND_ADDRESS,
+            6162,
+            configuration=configuration,
+            create_protocol=WebTransportProtocol,
+        )
+
+        await asyncio.Future()
+
+    new_loop = asyncio.get_event_loop()
+    new_loop.run_until_complete(
+        double_server()
+    )
     
+
     try:
         print("Listening on https://{}:{}".format(BIND_ADDRESS, BIND_PORT))
         logging.info(
             "Listening on https://{}:{}".format(BIND_ADDRESS, BIND_PORT))
-        loop.run_forever()
+        new_loop.run_forever()
     except KeyboardInterrupt:
         pass
-
