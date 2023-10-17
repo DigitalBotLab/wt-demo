@@ -95,7 +95,7 @@ BIND_PORT = 6161
 
 from collections import deque
 
-stream_cache = []
+stream_cache = deque(maxlen=10)
 
 logger = logging.getLogger(__name__)
 
@@ -117,8 +117,7 @@ class CounterHandler:
         self._payloads = defaultdict(bytearray)
 
     def h3_event_received(self, event: H3Event) -> None:
-        global stream_cache
-        print("[CounterHandler] h3_event_received")
+        # print("[CounterHandler] h3_event_received")
         if isinstance(event, DatagramReceived):
             payload = event.data
             self._http.send_datagram(self._session_id, payload)
@@ -127,6 +126,7 @@ class CounterHandler:
             #print("[CounterHandler] stream_id len(payloads)", event.stream_id, len(self._payloads), event.data)
             self._payloads[event.stream_id] += event.data
             if event.stream_ended:
+                stream_cache.append(self._payloads[event.stream_id][:])
                 if stream_is_unidirectional(event.stream_id):
                     response_id = self._http.create_webtransport_stream(
                         self._session_id, is_unidirectional=True)
@@ -134,17 +134,17 @@ class CounterHandler:
                     response_id = event.stream_id
                 
                 
-                payload = self._payloads[event.stream_id]
+                # payload = self._payloads[event.stream_id]
                 # else:
-                # payload = stream_cache[0]
+                payload = stream_cache[0]
                 
-                print("payload", len(stream_cache), payload)
+                # print("payload", len(stream_cache), payload)
                 self._http._quic.send_stream_data(
                     response_id, payload, end_stream=True)
                 self.stream_closed(event.stream_id)
 
     def stream_closed(self, stream_id: int) -> None:
-        print("[CounterHandler] stream_closed")
+        # print("[CounterHandler] stream_closed")
         try:
             del self._payloads[stream_id]
         except KeyError:
@@ -165,7 +165,7 @@ class WebTransportProtocol(QuicConnectionProtocol):
     def quic_event_received(self, event: QuicEvent) -> None:
         # print("[WebTransportProtocol] quic_event_received")
         if isinstance(event, ProtocolNegotiated):
-            print("[WebTransportProtocol] ProtocolNegotiated", event)
+            # print("[WebTransportProtocol] ProtocolNegotiated", event)
             self._http = H3Connection(self._quic, enable_webtransport=True)
         elif isinstance(event, StreamReset) and self._handler is not None:
             # Streams in QUIC can be closed in two ways: normal (FIN) and
@@ -178,7 +178,7 @@ class WebTransportProtocol(QuicConnectionProtocol):
                 self._h3_event_received(h3_event)
 
     def _h3_event_received(self, event: H3Event) -> None:
-        print("[WebTransportProtocol] _h3_event_received")
+        # print("[WebTransportProtocol] _h3_event_received")
         if isinstance(event, HeadersReceived):
             headers = {}
             for header, value in event.headers:
@@ -241,6 +241,7 @@ if __name__ == '__main__':
             configuration=configuration,
             create_protocol=WebTransportProtocol,
         ))
+    
     try:
         print("Listening on https://{}:{}".format(BIND_ADDRESS, BIND_PORT))
         logging.info(
