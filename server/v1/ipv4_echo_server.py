@@ -88,14 +88,17 @@ from aioquic.quic.configuration import QuicConfiguration
 from aioquic.quic.connection import stream_is_unidirectional
 from aioquic.quic.events import ProtocolNegotiated, StreamReset, QuicEvent
 
+import threading
+
 #BIND_ADDRESS = '::1'
 #BIND_PORT = 4433
 
 BIND_ADDRESS = '0.0.0.0'
 BIND_PORT = 6161
 
-
-stream_cache = deque(maxlen=10)
+stream_cache = []
+current_stream_data = None
+# camera_cache = deque(maxlen=10)
 
 logger = logging.getLogger(__name__)
 
@@ -112,11 +115,15 @@ logger = logging.getLogger(__name__)
 
 class CounterHandler:
 
-    def __init__(self, session_id, http: H3Connection) -> None:
+    def __init__(self, session_id, http: H3Connection, path) -> None:
         print("init CounterHandler")
         self._session_id = session_id
         self._http = http
         self._payloads = defaultdict(bytearray)
+        
+        self._path = path        
+        self._cache = stream_cache
+        self._stream_count = 0
 
     def h3_event_received(self, event: H3Event) -> None:
         # print("[CounterHandler] h3_event_received")
@@ -128,18 +135,27 @@ class CounterHandler:
             #print("[CounterHandler] stream_id len(payloads)", event.stream_id, len(self._payloads), event.data)
             self._payloads[event.stream_id] += event.data
             if event.stream_ended:
-                stream_cache.append(self._payloads[event.stream_id][:])
+
+                self._stream_count += 1
+
+                if self._path == "/stream":
+                    self._cache.append(self._payloads[event.stream_id][:])
+
                 if stream_is_unidirectional(event.stream_id):
                     response_id = self._http.create_webtransport_stream(
                         self._session_id, is_unidirectional=True)
                 else:
                     response_id = event.stream_id
 
-                # payload = self._payloads[event.stream_id]
-                # else:
-                payload = stream_cache[0]
+                if self._path == "/camera" and len(self._cache) > 5:
+                    payload = self._cache.pop(0) +  self._cache.pop(0)
+                    # self._stream_count = 0
+                else:
+                    payload = self._payloads[event.stream_id]
 
-                # print("payload", len(stream_cache), payload)
+                if self._stream_count < 10:
+                    print("payload len(stream_cache)", len(self._cache), self._path, payload)
+
                 self._http._quic.send_stream_data(
                     response_id, payload, end_stream=True)
                 self.stream_closed(event.stream_id)
@@ -205,7 +221,11 @@ class WebTransportProtocol(QuicConnectionProtocol):
             return
         if path == b"/echo":
             assert(self._handler is None)
-            self._handler = CounterHandler(stream_id, self._http)
+            self._handler = CounterHandler(stream_id, self._http, path='/camera') 
+            self._send_response(stream_id, 200)
+        elif path == b'/stream':
+            assert(self._handler is None)
+            self._handler = CounterHandler(stream_id, self._http, path='/stream')
             self._send_response(stream_id, 200)
         else:
             self._send_response(stream_id, 404, end_stream=True)
