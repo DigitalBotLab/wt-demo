@@ -385,7 +385,7 @@ document.addEventListener('DOMContentLoaded', async function(event) {
     const ssrc = ssrcArr[0];
     const framerat = Math.min(framer, ts.frameRate/vConfig.framerateScale) ; 
 
-    const config = {
+    let config = {
       alpha: "discard",
       latencyMode: latencyPref,
       bitrateMode: bitPref,
@@ -439,6 +439,7 @@ document.addEventListener('DOMContentLoaded', async function(event) {
     // NOTE: transferring frameStream and reading it in the worker is more
     // efficient than reading frameStream here and transferring VideoFrames individually.
     console.log("streamWorker", streamWorker);
+    config = { "alpha": "discard", "latencyMode": "realtime", "bitrateMode": "variable", "codec": "vp8", "width": 320, "height": 240, "hardwareAcceleration": "no-preference", "decHwAcceleration": "no-preference", "bitrate": "100000", "framerate": 30, "keyInterval": "3000", "ssrc": 42387539, "scalabilityMode": "L1T3", "pt": 3 }
     try {
       streamWorker.postMessage({ type: "stream", config: config, url: url, streams: {input: inputStream, output: outputStream}}, [inputStream, outputStream]);
     } catch(e) {
