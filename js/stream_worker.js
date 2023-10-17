@@ -660,8 +660,8 @@ SSRC = this.config.ssrc
          hydChunk.pt = pt;
          hydChunk.seqNo = seqNo;
          //self.postMessage({text: 'seqNo: ' + seqNo + ' Deserial hdr: ' + HEADER_LENGTH + ' + ' chunk length: ' + hydChunk.byteLength });
-         console.log("hydChunk", JSON.stringify(hydChunk), seqPointer);
-         if (hydChunk.seqNo == seqPointer || seqPointer > 100) {
+         //console.log("hydChunk", JSON.stringify(hydChunk), seqPointer);
+         if (hydChunk.seqNo == seqPointer || seqPointer > 50) {
            // No holes in the sequence number space
            seqPointer++
            controller.enqueue(hydChunk); 
@@ -904,7 +904,7 @@ SSRC = this.config.ssrc
              return;
            } 
            let number = this.streamNumber++;
-           self.postMessage({text: 'New incoming stream # ' + number});
+           //self.postMessage({text: 'New incoming stream # ' + number});
            get_frame(value, number).then(
              (frame) => {
                if (frame) {

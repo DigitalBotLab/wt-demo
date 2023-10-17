@@ -656,7 +656,7 @@ SSRC = this.config.ssrc
          hydChunk.pt = pt;
          hydChunk.seqNo = seqNo;
          //self.postMessage({text: 'seqNo: ' + seqNo + ' Deserial hdr: ' + HEADER_LENGTH + ' + ' chunk length: ' + hydChunk.byteLength });
-         if (hydChunk.seqNo == seqPointer) {
+         if (hydChunk.seqNo == seqPointer || seqPointer > 50) {
            // No holes in the sequence number space
            seqPointer++
            controller.enqueue(hydChunk); 
