@@ -162,7 +162,8 @@ async function getResValue(radio) {
     addToEventLog(`EnumerateDevices error: ${e.message}`, 'fatal');
   }
   try {
-    mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+    console.log("[constraints]", constraints)
+    mediaStream = await navigator.mediaDevices.getDisplayMedia(constraints);
     document.getElementById('inputVideo').srcObject = mediaStream;
   } catch(e) {
     addToEventLog(`getUserMedia error: ${e.message}`, 'fatal');
@@ -245,9 +246,10 @@ document.addEventListener('DOMContentLoaded', async function(event) {
     addToEventLog('Error in Device enumeration', 'fatal');
   }
   constraints.deviceId = videoSource ? {exact: videoSource} : undefined;
-  //addToEventLog('videoSource: ' + JSON.stringify(videoSource) + ' DeviceId: ' + constraints.deviceId);
+  addToEventLog('videoSource: ' + JSON.stringify(videoSource) + ' DeviceId: ' + constraints.deviceId);
   // Get a MediaStream from the webcam.
-  mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+  //mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+  mediaStream = await navigator.mediaDevices.getDisplayMedia(constraints);
   // Connect the webcam stream to the video element.
   document.getElementById('inputVideo').srcObject = mediaStream;
   // Create a new worker.
@@ -439,7 +441,7 @@ document.addEventListener('DOMContentLoaded', async function(event) {
     // NOTE: transferring frameStream and reading it in the worker is more
     // efficient than reading frameStream here and transferring VideoFrames individually.
     console.log("streamWorker", streamWorker);
-    config = { "alpha": "discard", "latencyMode": "realtime", "bitrateMode": "variable", "codec": "vp8", "width": 320, "height": 240, "hardwareAcceleration": "no-preference", "decHwAcceleration": "no-preference", "bitrate": "100000", "framerate": 30, "keyInterval": "3000", "ssrc": 42387539, "scalabilityMode": "L1T3", "pt": 3 }
+    //config = { "alpha": "discard", "latencyMode": "realtime", "bitrateMode": "variable", "codec": "vp8", "width": 1280, "height": 720, "hardwareAcceleration": "no-preference", "decHwAcceleration": "no-preference", "bitrate": "100000", "framerate": 30, "keyInterval": "3000", "ssrc": 42387539, "scalabilityMode": "L1T3", "pt": 3 }
     try {
       streamWorker.postMessage({ type: "stream", config: config, url: url, streams: {input: inputStream, output: outputStream}}, [inputStream, outputStream]);
     } catch(e) {

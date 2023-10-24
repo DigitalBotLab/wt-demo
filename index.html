@@ -148,12 +148,13 @@
 
 <div id="resButtons">
 <p>Resolution:</p>
+   <input type="radio" id="hd" name="resolution" value="hd" onchange="getResValue(this)">
+   <label for="hd">HD</label><br>
    <input type="radio" id="qvga" name="resolution" value="qvga" checked="checked" onchange="getResValue(this)">
    <label for="qvga">QVGA</label><br>
    <input type="radio" id="vga" name="resolution" value="vga" onchange="getResValue(this)">
    <label for="vga">VGA</label><br>
-   <input type="radio" id="hd" name="resolution" value="hd" onchange="getResValue(this)">
-   <label for="hd">HD</label><br>
+   
    <input type="radio" id="full-hd" name="resolution" value="full-hd" onchange="getResValue(this)">
    <label for="full-hd">Full HD</label><br>
    <input type="radio" id="tv4K" name="resolution" value="tv4K" onchange="getResValue(this)">
