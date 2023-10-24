@@ -542,6 +542,7 @@ SSRC = this.config.ssrc
        start (controller) {
        },
        transform(chunk, controller) {
+        console.log('Serialize: ' + chunk.type);
          let tid, pt, duration, timestamp;
          if (chunk.type == 'config') {
            tid = 0;
@@ -805,6 +806,8 @@ SSRC = this.config.ssrc
                encqueue_update(queue);
                const before = performance.now();
                enc_update({output: 0, timestamp: frame.timestamp, time: before});  
+
+               //console.log("frame", frame, "insert_keyframe", insert_keyframe);
                this.encoder.encode(frame, { keyFrame: insert_keyframe });
              } 
            } catch(e) {
@@ -950,7 +953,7 @@ SSRC = this.config.ssrc
           ).catch((e) => {
             Promise.reject(e);
           });
-     Promise.all([promise1, promise2]).then(
+     Promise.all([promise2, promise1]).then(
        (values) => { self.postMessage({text: 'Resolutions: ' + JSON.stringify(values)});}
        ).catch((e) => { 
          self.postMessage({severity: 'fatal', text: `pipeline error: ${e.message}`}); 
