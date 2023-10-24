@@ -148,13 +148,14 @@ class CounterHandler:
                     response_id = event.stream_id
 
                 if self._path == "/camera" and len(self._cache) > 5:
-                    payload = self._cache.pop(0) +  self._cache.pop(0)
+                    payload = self._cache.pop(0)
                     # self._stream_count = 0
                 else:
                     payload = self._payloads[event.stream_id]
 
                 if self._stream_count < 10:
-                    print("payload len(stream_cache)", len(self._cache), self._path, payload)
+                    pass
+                    # print("payload len(stream_cache)", len(self._cache), self._path, payload)
 
                 self._http._quic.send_stream_data(
                     response_id, payload, end_stream=True)
