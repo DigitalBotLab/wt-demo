@@ -12,7 +12,7 @@
     <base target="_blank">
 
     <title>WebTransport Echo with WebCodecs in Worker + RVFC</title>
-    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='/css/main.css') }}"> 
 
     <style>
         body, html {
@@ -65,9 +65,10 @@
   </div>
 </div>
 
-<textarea id="vLog" style="width: 980px; height: 480px"></textarea>
+<textarea id="vLog" style="width: 380px; height: 180px"></textarea>
 <br/></br>
 
+<div style="display: none;">
 <div id="rateInput">
   <label for="rate">bitrate: </label>
   <input type="text" name="rate" id="rate" minlength=2 maxlength=8 size=8
@@ -177,6 +178,8 @@
    <label for="videoSource">Video source: </label><select id="videoSource"></select>
 </div>
 
+</div>
+
 <video height="50%" id="inputVideo" autoplay muted></video>
 <br/>Local Video</br>
 <br/></br>
@@ -187,6 +190,7 @@
 <button id="stop">Stop</button>
 <br/></br>
 <script src="https://cdn.plot.ly/plotly-2.18.2.min.js"></script>
-<script src="js/main.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.js" integrity="sha512-aMGMvNYu8Ue4G+fHa359jcPb1u+ytAF+P2SCb+PxrjCdO3n3ZTxJ30zuH39rimUggmTwmh2u7wvQsDTHESnmfQ==" crossorigin="anonymous"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
