@@ -9,6 +9,10 @@ socketio = SocketIO(app)
 def index():
     return render_template('index.html')
 
+@app.route('/stream')
+def stream():
+    return render_template('stream.html')
+
 @socketio.on('connect')
 def handle_connect():
     print('Client connected')
@@ -23,5 +27,11 @@ def send_message():
     socketio.emit('message', message)
     return 'Message sent'
 
+@app.route('/start_stream')
+def start_stream():
+    message = 'start_stream'
+    socketio.emit('message', message)
+    return 'Message sent'
+
 if __name__ == '__main__':
-    socketio.run(app, host='localhost') # port=8080
+    socketio.run(app, host='localhost', debug=True) # port=8080

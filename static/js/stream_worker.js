@@ -438,13 +438,14 @@ function readUInt64(arr, pos) {
 };
 
 self.addEventListener('message', async function(e) {
-  if (stopped) return;
+  // if (stopped) return;
   // In this demo, we expect at most two messages, one of each type.
   let type = e.data.type;
   let transport;
 
   if (type == "stop") {
     self.postMessage({text: 'Stop message received.'});
+    console.log("[transport] stop message received.");
     if (started) pl.stop();
     return;
   } else if (type != "stream"){
@@ -457,8 +458,13 @@ self.addEventListener('message', async function(e) {
   // Create WebTransport
   try {
     transport = new WebTransport(e.data.url);
+    this.transport = transport;
+    console.log("[transport] Initiating connection...");
     self.postMessage({text: 'Initiating connection...'});
+    //currentTransportDatagramWriter = transport.datagrams.writable.getWriter();
+    //await currentTransportDatagramWriter.write("hello_world");
   } catch (e) {
+    console.log("[transport] Failed to create connection object");
     self.postMessage({severity: 'fatal', text: `Failed to create connection object: ${e.message}`});
     return;
   }
@@ -466,18 +472,23 @@ self.addEventListener('message', async function(e) {
   try {
     await transport.ready;
     self.postMessage({text: 'Connection ready.'});
+    console.log("[transport] Connection ready2.");
     pl = new pipeline(e.data, transport);
     pl.start();
+    
   } catch (e) {
     self.postMessage({severity: 'fatal', text: `Connection failed: ${e.message}`});
     return;
   }
 
   try {
+    console.log("???????");
     await transport.closed;
+    console.log("[transport] Connection closed normally.");
     self.postMessage({text: 'Connection closed normally.'});
   } catch (e) {
     self.postMessage({severity: 'fatal', text: `Connection closed abruptly: ${e.message}`});
+    console.log("[transport] Connection closed abruptly.");
     pl.stop();
     return;
   }
@@ -903,7 +914,7 @@ SSRC = this.config.ssrc
            if (done) {
              this.reader.releaseLock();
              self.postMessage({text: 'Done accepting unidirectional streams'});
-             controller.close();
+             //controller.close();
              return;
            } 
            let number = this.streamNumber++;
@@ -931,6 +942,7 @@ SSRC = this.config.ssrc
    }
 
    start() {
+    console.log("[stream_worker] start");
      if (stopped) return;
      started = true;
      self.postMessage({text: 'Start method called.'});
@@ -952,8 +964,10 @@ SSRC = this.config.ssrc
             }
           ).catch((e) => {
             Promise.reject(e);
-          });
-     Promise.all([promise2, promise1]).then(
+          });    
+
+     //ATTENTION: promise1 only
+     Promise.all([promise1, promise2]).then( //promise2
        (values) => { self.postMessage({text: 'Resolutions: ' + JSON.stringify(values)});}
        ).catch((e) => { 
          self.postMessage({severity: 'fatal', text: `pipeline error: ${e.message}`}); 
@@ -969,25 +983,16 @@ SSRC = this.config.ssrc
      stopped = true;
      this.stopped = true;
      self.postMessage({text: 'stop(): encoder and decoder closed'});
+     console.log('stop(): encoder and decoder closed');
      const len = rtt_aggregate.all.length;
-     if (len > 1) {
-       const enc_stats = enc_report();
-       const encqueue_stats = encqueue_report();
-       const dec_stats = dec_report();
-       const decqueue_stats = decqueue_report();
-       const rtt_stats = rtt_report();
-       const bwe_stats = bwe_report();
-       self.postMessage({severity: 'chart', x: 'Length', y: 'RTT', label: 'RTT (ms) by Frame length', div: 'chart_div', text: JSON.stringify(rtt_aggregate.all)});
-       self.postMessage({severity: 'chart', x: 'Frame Number', y: 'Glass-Glass Latency', label: 'Glass-Glass Latency (ms) by Frame Number', div: 'chart2_div', text: ''});
-       self.postMessage({severity: 'chart', x: 'Timestamp', y: 'Encoding Time', label: 'Encoding Time (ms) by Timestamp', div: 'chart3_div', text: JSON.stringify(enc_time.all)});
-       self.postMessage({severity: 'chart', x: 'Timestamp', y: 'Decoding Time', label: 'Decoding Time (ms) by Timestamp', div: 'chart4_div', text: JSON.stringify(dec_time.all)});
-       self.postMessage({text: 'BWE report: ' + JSON.stringify(bwe_stats)});
-       self.postMessage({text: 'RTT report: ' + JSON.stringify(rtt_stats)});
-       self.postMessage({text: 'Encoder Time report: ' + JSON.stringify(enc_stats)});
-       self.postMessage({text: 'Encoder Queue report: ' + JSON.stringify(encqueue_stats)});
-       self.postMessage({text: 'Decoder Time report: ' + JSON.stringify(dec_stats)});
-       self.postMessage({text: 'Decoder Queue report: ' + JSON.stringify(decqueue_stats)});
-     }
+
+     if (this.transport){
+      this.transport.close({
+        closeCode: 0o17,
+        reason: "CloseButtonPressed",
+      });
+    }
+
      return;
    }
 }

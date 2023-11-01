@@ -224,6 +224,7 @@ function stop() {
 }
 
 document.addEventListener('DOMContentLoaded', async function (event) {
+  console.log('DOMContentLoaded');
   if (stopped) return;
   addToEventLog('DOM Content Loaded');
 
@@ -448,6 +449,8 @@ document.addEventListener('DOMContentLoaded', async function (event) {
       addToEventLog(e.name + ": " + e.message, 'fatal');
     }
   }
+
+  registerSocket();
 }, false);
 
 
@@ -463,10 +466,10 @@ window.addEventListener('beforeunload', function (event) {
 
 let socket;
 
-window.addEventListener('load', function (event) {
+function registerSocket(){
   // Your code here
   // This code will be executed when the webpage finishes loading
-  console.log("On load")
+  console.log("registerSocket");
   socket = io();
 
   // Event handler for new connections.
@@ -476,8 +479,14 @@ window.addEventListener('load', function (event) {
     socket.emit('my_event', { data: 'I\'m connected!' });
   });
 
+  console.log('Connected to:', socket.io.uri);
+
   //message
   socket.on('message', function (data) {
     console.log('Received message:', data);
+    if (data === "start_stream") {
+      console.log("streaming1");
+      connectButton.click();
+    }
   });
-});
+}
