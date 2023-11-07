@@ -1,7 +1,8 @@
 python3.9 ipv4_echo_server.py webrtc.internaut.com/fullchain.pem webrtc.internaut.com/privkey.pem &
 python3.9 ipv6_echo_server.py webrtc.internaut.com/fullchain.pem webrtc.internaut.com/privkey.pem &
 
-this one: python ipv4_echo_server.py dbl_wild.crt dbl_wild.key
+python ipv4_echo_server.py dbl_wild.crt dbl_wild.key
+python original_ipv4_echo.py dbl_wild.crt dbl_wild.key
 
 
 python ipv4_echo_server.py certificate.pem certificate.key

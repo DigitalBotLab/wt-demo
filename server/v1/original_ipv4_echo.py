@@ -74,7 +74,6 @@ This will output "13" (the length of "Hello, world!") into the console.
 # See https://www.chromium.org/developers/how-tos/run-chromium-with-flags for
 # details on how to run Chromium with flags.
 
-from collections import deque
 import argparse
 import asyncio
 import logging
@@ -88,23 +87,13 @@ from aioquic.quic.configuration import QuicConfiguration
 from aioquic.quic.connection import stream_is_unidirectional
 from aioquic.quic.events import ProtocolNegotiated, StreamReset, QuicEvent
 
-import threading
-import queue
-from datetime import datetime
-
 #BIND_ADDRESS = '::1'
 #BIND_PORT = 4433
 
 BIND_ADDRESS = '0.0.0.0'
 BIND_PORT = 6161
 
-stream_cache = queue.Queue()
-current_stream_data = None
-# camera_cache = deque(maxlen=10)
-
 logger = logging.getLogger(__name__)
-
-import pickle
 
 # CounterHandler implements a really simple protocol:
 #   - For every incoming bidirectional stream, it counts bytes it receives on
@@ -115,82 +104,32 @@ import pickle
 #     count on a new unidirectional stream.
 #   - For every incoming datagram, it sends a datagram with the length of
 #     datagram that was just received.
-
-
 class CounterHandler:
 
-    def __init__(self, session_id, http: H3Connection, path) -> None:
-        print("init CounterHandler")
+    def __init__(self, session_id, http: H3Connection) -> None:
         self._session_id = session_id
         self._http = http
         self._payloads = defaultdict(bytearray)
 
-        self._path = path  
-        if path == "/render":
-            
-            with open("carrot2.pkl", "rb") as f:
-                list_data = pickle.load(f)
-                for data in list_data:
-                    stream_cache.put(data)
-                
-            print("[CounterHandler] loading pickle", stream_cache.qsize())
-        
-        self._cache = stream_cache
-        self._stream_count = 0
-
     def h3_event_received(self, event: H3Event) -> None:
-        # print("[CounterHandler] h3_event_received")
         if isinstance(event, DatagramReceived):
             payload = event.data
             self._http.send_datagram(self._session_id, payload)
 
         if isinstance(event, WebTransportStreamDataReceived):
-            #print("[CounterHandler] stream_id len(payloads)", event.stream_id, len(self._payloads), event.data)
             self._payloads[event.stream_id] += event.data
             if event.stream_ended:
-
-                self._stream_count += 1
-
-                if self._path == "/stream":
-                    self._cache.put(self._payloads[event.stream_id][:])
-
-                print("stream_count", self._cache.qsize(), datetime.now())
-
-                # create streaming response id
                 if stream_is_unidirectional(event.stream_id):
                     response_id = self._http.create_webtransport_stream(
                         self._session_id, is_unidirectional=True)
                 else:
                     response_id = event.stream_id
-
-                payload = None
-                if self._path == "/camera" and self._cache.qsize() > 5:
-                    payload = self._cache.get()
-                    # self._stream_count = 0
-                elif self._path == "/render":
-                    if not self._cache.empty():
-                        payload = self._cache.get()
-                else:
-                    # echo back
-                    payload = self._payloads[event.stream_id]
-
-                # # save pickle
-                # if self._cache.qsize() == 50 and self._path == "/stream":
-                #     with open('carrot3.pkl', 'wb') as f:
-                #         pickle.dump(self._cache, f)
-                    
-                #     print("[pickle] dumped")
-                #     # print("payload len(stream_cache)", len(self._cache), self._path, payload)
-
-                print("[send back]", event.stream_id, response_id, payload[:20])
-
-                if payload:
-                    self._http._quic.send_stream_data(
-                        response_id, payload, end_stream=True)
+                payload = self._payloads[event.stream_id]
+                self._http._quic.send_stream_data(
+                    response_id, payload, end_stream=True)
                 self.stream_closed(event.stream_id)
 
     def stream_closed(self, stream_id: int) -> None:
-        # print("[CounterHandler] stream_closed")
         try:
             del self._payloads[stream_id]
         except KeyError:
@@ -203,15 +142,12 @@ class CounterHandler:
 class WebTransportProtocol(QuicConnectionProtocol):
 
     def __init__(self, *args, **kwargs) -> None:
-        print("init WebTransportProtocol")
         super().__init__(*args, **kwargs)
         self._http: Optional[H3Connection] = None
         self._handler: Optional[CounterHandler] = None
 
     def quic_event_received(self, event: QuicEvent) -> None:
-        # print("[WebTransportProtocol] quic_event_received", event)
         if isinstance(event, ProtocolNegotiated):
-            # print("[WebTransportProtocol] ProtocolNegotiated", event)
             self._http = H3Connection(self._quic, enable_webtransport=True)
         elif isinstance(event, StreamReset) and self._handler is not None:
             # Streams in QUIC can be closed in two ways: normal (FIN) and
@@ -224,7 +160,6 @@ class WebTransportProtocol(QuicConnectionProtocol):
                 self._h3_event_received(h3_event)
 
     def _h3_event_received(self, event: H3Event) -> None:
-        # print("[WebTransportProtocol] _h3_event_received")
         if isinstance(event, HeadersReceived):
             headers = {}
             for header, value in event.headers:
@@ -232,11 +167,6 @@ class WebTransportProtocol(QuicConnectionProtocol):
             if (headers.get(b":method") == b"CONNECT" and
                     headers.get(b":protocol") == b"webtransport"):
                 self._handshake_webtransport(event.stream_id, headers)
-                print("[WebTransportProtocol] headers", headers)
-
-                # clean up stream cache
-                if headers.get(b":path") == b"/stream" and len(stream_cache) > 0:
-                    stream_cache.clear()
             else:
                 self._send_response(event.stream_id, 400, end_stream=True)
 
@@ -254,15 +184,7 @@ class WebTransportProtocol(QuicConnectionProtocol):
             return
         if path == b"/echo":
             assert(self._handler is None)
-            self._handler = CounterHandler(stream_id, self._http, path='/camera') 
-            self._send_response(stream_id, 200)
-        elif path == b'/stream':
-            assert(self._handler is None)
-            self._handler = CounterHandler(stream_id, self._http, path='/stream')
-            self._send_response(stream_id, 200)
-        elif path == b'/render':
-            assert(self._handler is None)
-            self._handler = CounterHandler(stream_id, self._http, path='/render')
+            self._handler = CounterHandler(stream_id, self._http)
             self._send_response(stream_id, 200)
         else:
             self._send_response(stream_id, 404, end_stream=True)
@@ -291,42 +213,17 @@ if __name__ == '__main__':
     )
     configuration.load_cert_chain(args.certificate, args.key)
 
-    # loop = asyncio.get_event_loop()
-    # loop.run_until_complete(
-    #     serve(
-    #         BIND_ADDRESS,
-    #         BIND_PORT,
-    #         configuration=configuration,
-    #         create_protocol=WebTransportProtocol,
-    #     )
-    # )
-
-    async def double_server():
-        await serve(
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(
+        serve(
             BIND_ADDRESS,
             BIND_PORT,
             configuration=configuration,
             create_protocol=WebTransportProtocol,
-        )
-        await serve(
-            BIND_ADDRESS,
-            6162,
-            configuration=configuration,
-            create_protocol=WebTransportProtocol,
-        )
-
-        await asyncio.Future()
-
-    new_loop = asyncio.get_event_loop()
-    new_loop.run_until_complete(
-        double_server()
-    )
-    
-
+        ))
     try:
-        print("Listening on https://{}:{}".format(BIND_ADDRESS, BIND_PORT))
         logging.info(
             "Listening on https://{}:{}".format(BIND_ADDRESS, BIND_PORT))
-        new_loop.run_forever()
+        loop.run_forever()
     except KeyboardInterrupt:
         pass
