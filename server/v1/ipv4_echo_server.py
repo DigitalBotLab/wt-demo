@@ -98,6 +98,8 @@ from datetime import datetime
 BIND_ADDRESS = '0.0.0.0'
 BIND_PORT = 6161
 
+save_stream = True
+stream_list = []
 stream_cache = queue.Queue()
 current_stream_data = None
 # camera_cache = deque(maxlen=10)
@@ -127,8 +129,8 @@ class CounterHandler:
 
         self._path = path  
         if path == "/render":
-            
-            with open("carrot2.pkl", "rb") as f:
+            stream_cache = queue.Queue()
+            with open("carrot3.pkl", "rb") as f:
                 list_data = pickle.load(f)
                 for data in list_data:
                     stream_cache.put(data)
@@ -152,6 +154,7 @@ class CounterHandler:
                 self._stream_count += 1
 
                 if self._path == "/stream":
+                    stream_list.append(self._payloads[event.stream_id][:])
                     self._cache.put(self._payloads[event.stream_id][:])
 
                 print("stream_count", self._cache.qsize(), datetime.now())
@@ -174,15 +177,15 @@ class CounterHandler:
                     # echo back
                     payload = self._payloads[event.stream_id]
 
-                # # save pickle
-                # if self._cache.qsize() == 50 and self._path == "/stream":
-                #     with open('carrot3.pkl', 'wb') as f:
-                #         pickle.dump(self._cache, f)
+                # save pickle
+                if self._cache.qsize() == 100 and self._path == "/stream" and save_stream:
+                    with open('carrot3.pkl', 'wb') as f:
+                        pickle.dump(stream_list, f)
                     
-                #     print("[pickle] dumped")
-                #     # print("payload len(stream_cache)", len(self._cache), self._path, payload)
+                    print("[pickle] dumped")
+                    # print("payload len(stream_cache)", len(self._cache), self._path, payload)
 
-                print("[send back]", event.stream_id, response_id, payload[:20])
+                print("[send back]", event.stream_id, response_id, payload[:20] if payload else None)
 
                 if payload:
                     self._http._quic.send_stream_data(
@@ -235,8 +238,8 @@ class WebTransportProtocol(QuicConnectionProtocol):
                 print("[WebTransportProtocol] headers", headers)
 
                 # clean up stream cache
-                if headers.get(b":path") == b"/stream" and len(stream_cache) > 0:
-                    stream_cache.clear()
+                if headers.get(b":path") == b"/stream" and stream_cache.qsize() > 0:
+                    stream_cache = queue.Queue()
             else:
                 self._send_response(event.stream_id, 400, end_stream=True)
 
