@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-
+    Permissions-Policy: <directive> <allowlist>
     <meta charset="utf-8">
     <meta name="description" content="WebCodecs code samples">
     <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
@@ -56,16 +56,15 @@
 </head>
 
 <body>
-<div>
-  <h2>WebTransport Echo with WebCodecs in Worker + RVFC</h2>
-  <div class="input-line">
+<div style="display: none;">
+  <div class="input-line" >
     <label for="url">URL:</label>
     <input type="text" name="url" id="url" size="40"
         value="https://wt.digitalbotlab.com:6162/stream">
   </div>
 </div>
 
-<textarea id="vLog" style="width: 380px; height: 180px"></textarea>
+<textarea id="vLog" style="width: 380px; height: 180px; display: none;"></textarea>
 <br/></br>
 
 <div style="display: none;">
@@ -180,10 +179,10 @@
 
 </div>
 
-<video height="50%" id="inputVideo" autoplay muted></video>
+<video height="100%" id="inputVideo" style="display: block;" autoplay muted></video>
 <br/>Local Video</br>
 <br/></br>
-<video height="50%" id="outputVideo" autoplay muted></video>
+<video height="100%" id="outputVideo" autoplay muted></video>
 <br/>Encoded (and Decoded) Video via the WT Echo Server</br>
 <br/></br>
 <button id="connect">Start</button>

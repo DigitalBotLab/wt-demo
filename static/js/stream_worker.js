@@ -336,6 +336,7 @@ async function writeChunk(transport, chunk, rto, info) {
       });
   }, rto);
   try {
+    console.log('[writeChunk]: ' + chunk.byteLength);
     writer.write(chunk);
   } catch (e) {
     self.postMessage({text: `Chunk cannot be written: ${e.message}`});
@@ -446,7 +447,7 @@ self.addEventListener('message', async function(e) {
   if (type == "stop") {
     self.postMessage({text: 'Stop message received.'});
     console.log("[transport] stop message received.");
-    if (started) pl.stop();
+    pl.stop();
     return;
   } else if (type != "stream"){
     self.postMessage({severity: 'fatal', text: 'Invalid message received.'});
@@ -482,7 +483,6 @@ self.addEventListener('message', async function(e) {
   }
 
   try {
-    console.log("???????");
     await transport.closed;
     console.log("[transport] Connection closed normally.");
     self.postMessage({text: 'Connection closed normally.'});
@@ -490,6 +490,7 @@ self.addEventListener('message', async function(e) {
     self.postMessage({severity: 'fatal', text: `Connection closed abruptly: ${e.message}`});
     console.log("[transport] Connection closed abruptly.");
     pl.stop();
+    pl = null;
     return;
   }
 
@@ -804,6 +805,7 @@ SSRC = this.config.ssrc
          }
        },
        transform(frame, controller) {
+        console.log("[this.pending_outputs]", this.pending_outputs);
          if (this.pending_outputs <= 30) {
            this.pending_outputs++;
            const insert_keyframe = (this.frameCounter % config.keyInterval) == 0;
@@ -942,7 +944,7 @@ SSRC = this.config.ssrc
    }
 
    start() {
-    console.log("[stream_worker] start");
+    console.log("[stream_worker] start", this.inputStream);
      if (stopped) return;
      started = true;
      self.postMessage({text: 'Start method called.'});
@@ -952,7 +954,7 @@ SSRC = this.config.ssrc
           .pipeTo(this.createSendStream(self,this.transport)).then(
             () =>  {
               Promise.resolve('Receive pipeline ');
-           }).catch((e) => {
+           }).catch((e) => {  
              Promise.reject(e);
            });
      const promise2 =  this.createReceiveStream(self,this.transport)

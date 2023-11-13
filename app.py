@@ -1,9 +1,11 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, make_response
 from flask_socketio import SocketIO, emit
+from flask_cors import CORS
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret_key'
-socketio = SocketIO(app)
+cors = CORS(app, origins='*')
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 @app.route('/')
 def index():
@@ -11,7 +13,9 @@ def index():
 
 @app.route('/stream')
 def stream():
-    return render_template('stream.html')
+    response = make_response(render_template('stream.html'))
+    response.headers["Permissions-Policy"] = "display-capture=self http://localhost:5173"
+    return response
 
 @socketio.on('connect')
 def handle_connect():
@@ -30,6 +34,12 @@ def send_message():
 @app.route('/start_stream')
 def start_stream():
     message = 'start_stream'
+    socketio.emit('message', message)
+    return 'Message sent'
+
+@app.route('/receive_stream')
+def receive_stream():
+    message = 'receive_stream'
     socketio.emit('message', message)
     return 'Message sent'
 
