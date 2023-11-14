@@ -31,15 +31,27 @@ def send_message():
     socketio.emit('message', message)
     return 'Message sent'
 
-@app.route('/start_stream')
+@app.route('/send_stream')
 def start_stream():
-    message = 'start_stream'
+    message = 'send_stream'
+    socketio.emit('message', message)
+    return 'Message sent'
+
+@app.route('/stop_send_stream')
+def stop_send_stream():
+    message = 'stop_send_stream'
     socketio.emit('message', message)
     return 'Message sent'
 
 @app.route('/receive_stream')
 def receive_stream():
     message = 'receive_stream'
+    socketio.emit('message', message)
+    return 'Message sent'
+
+@app.route('/stop_receive_stream')
+def stop_receive_stream():
+    message = 'stop_receive_stream'
     socketio.emit('message', message)
     return 'Message sent'
 
