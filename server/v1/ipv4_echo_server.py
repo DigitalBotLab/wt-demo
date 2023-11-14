@@ -98,7 +98,7 @@ from datetime import datetime
 BIND_ADDRESS = '0.0.0.0'
 BIND_PORT = 6161
 
-save_stream = True
+
 stream_list = []
 stream_cache = queue.Queue()
 current_stream_data = None
@@ -118,18 +118,25 @@ import pickle
 #   - For every incoming datagram, it sends a datagram with the length of
 #     datagram that was just received.
 
+save_stream = False
+IN_DEBUG_MODE = False
 
 class CounterHandler:
 
     def __init__(self, session_id, http: H3Connection, path) -> None:
+        
         print("init CounterHandler")
         self._session_id = session_id
         self._http = http
         self._payloads = defaultdict(bytearray)
 
         self._path = path  
-        if path == "/render":
-            stream_cache = queue.Queue()
+        
+        if path == "/stream" or IN_DEBUG_MODE:
+            while not stream_cache.empty():
+                stream_cache.get()
+        
+        if path == "/render" and IN_DEBUG_MODE:
             with open("carrot3.pkl", "rb") as f:
                 list_data = pickle.load(f)
                 for data in list_data:
@@ -185,7 +192,7 @@ class CounterHandler:
                     print("[pickle] dumped")
                     # print("payload len(stream_cache)", len(self._cache), self._path, payload)
 
-                print("[send back]", event.stream_id, response_id, payload[:20] if payload else None)
+                print("[send back]", event.stream_id, response_id, payload[:10] if payload else None)
 
                 if payload:
                     self._http._quic.send_stream_data(
