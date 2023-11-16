@@ -22,7 +22,7 @@ function WebTransportWrap(props) {
     }, 50);
   };
   const connect = async () => {
-    const url = "https://echo.webtransport.day";
+    const url = "https://wt.digitalbotlab.com:6162/echo";
     try {
       // eslint-disable-next-line no-undef
       var transport = new WebTransport(url);
