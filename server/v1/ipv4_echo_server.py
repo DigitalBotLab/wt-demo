@@ -246,7 +246,8 @@ class WebTransportProtocol(QuicConnectionProtocol):
 
                 # clean up stream cache
                 if headers.get(b":path") == b"/stream" and stream_cache.qsize() > 0:
-                    stream_cache = queue.Queue()
+                    pass
+                    # stream_cache = queue.Queue()
             else:
                 self._send_response(event.stream_id, 400, end_stream=True)
 
